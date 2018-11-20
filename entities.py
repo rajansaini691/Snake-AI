@@ -12,7 +12,7 @@ class Snake:
     def __init__(self, weights):
         # Game variables
         self.coords = [[0, 5], [0, 4], [0, 3], [0, 2]]
-        self.food = [15, 15]
+        self.food = [random.randint(0, win_w / PX_HEIGHT), random.randint(0, win_h / PX_HEIGHT)]
         self.cur_dir = 1
         self.COLOR = (0, 0, 255)
 
@@ -21,6 +21,9 @@ class Snake:
         self.alive = True 
         self.weights = weights 
         self.cpu = logic.Network(weights)
+
+		# Needed for experiment 2c, which raises the reward with each food eaten.
+        self.food_count = 0
 
     def move(self, PX_HEIGHT, win_w, win_h):
         # Only moves when snake is alive
@@ -33,7 +36,9 @@ class Snake:
                 self.alive = False
 
 			# Experiment 2a: Seeing the effect commenting this line out has
-			#		Result:		Initially, the snake did choose to go left, confirming my hypothesis. However, that trait died out when they tried to suicide. I believe this is because
+			#		Result:		Initially, the snake did choose to go left, confirming my hypothesis. However, that trait died out later on when they started consistently scoring higher.
+			#					I believe this is because they were trying to suicide, since I lowered their score every time they moved away from the food. Rather than aim towards
+			#					it, they chose to minimize their punishment i.e., they get stuck in a local minimum. Experiment 2b will take away that punishment.
 			#					
             #for pixel in self.coords[1:]:
             #    if head == pixel:
@@ -63,7 +68,9 @@ class Snake:
             if(self.cur_dir == 2): head[0] -= 1
             if(self.cur_dir == 3): head[0] += 1
 
-            # Punish fitness if moving in wrong direction
+            # Punish fitness if moving in wrong direction. Taken away by Experiment 2b. Results: Snakes were no longer incentivized to move towards the food, resulting in
+			# getting trapped in a local minimum sooner. This is required. I think what needs to be done instead is reduce the impact this has the more points the snake gets.
+			# To do that, we reward each additional food by a square rather than linear relationship.
             if((head[0] - self.food[0]) ** 2 + (head[1] - self.food[1]) ** 2 > (self.coords[0][0] - self.food[0]) ** 2 + (self.coords[0][1] - self.food[1]) ** 2):
                 self.fitness -= 1.5
 
@@ -76,7 +83,9 @@ class Snake:
             if head != self.food:
                 self.coords.pop()
             else:
-                self.fitness += 100
+				# Experiment 2c: Raise the food count and increase the fitness by it
+                self.food_count += 0.5;
+                self.fitness += 100 * self.food_count
                 self.food = [random.randint(0, win_w / PX_HEIGHT), random.randint(0, win_h / PX_HEIGHT)]
 
     def draw(self, screen, PX_HEIGHT):
@@ -93,6 +102,7 @@ class Snake:
         self.alive = True
         self.cur_dir = 1
         self.food = [15, 15]
+        self.food_count = 0
 
     def sigmoid(self, x): 
         return 1 / (1 + np.exp(-x))
