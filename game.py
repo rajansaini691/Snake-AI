@@ -134,9 +134,9 @@ while not done:
         snake.move(PX_HEIGHT, win_w, win_h)
     
     # Drawing
-    #screen.fill((255, 255, 255))
-    #for snake in snakes:
-        #snake.draw(screen, PX_HEIGHT)
+    screen.fill((255, 255, 255))
+    for snake in snakes:
+        snake.draw(screen, PX_HEIGHT)
 
     # Checking deaths
     anyAlive = False

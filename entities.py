@@ -2,6 +2,7 @@ import logic
 import copy
 import pygame
 import random
+import numpy as np
 
 class Snake:
 
@@ -17,7 +18,9 @@ class Snake:
 
         # AI variables
         self.fitness = 0
-        self.alive = True self.weights = weights self.cpu = logic.Network(weights)
+        self.alive = True 
+        self.weights = weights 
+        self.cpu = logic.Network(weights)
 
     def move(self, PX_HEIGHT, win_w, win_h):
         # Only moves when snake is alive
@@ -33,8 +36,18 @@ class Snake:
                 if head == pixel:
                     self.alive = False
         
-            # Gets prediction from AI. Currently passing in head coordinate and distance from food. 
-            ai_dir = self.cpu.getDirection([self.coords[0][0], self.coords[0][1], self.coords[0][0] - self.food[0], self.coords[0][1] - self.food[1]])
+            # Gets prediction from AI
+			# Experiments for input vector: 
+			# 1. Passing in head coordinate and distance from food 
+            # 		ai_dir = self.cpu.getDirection([self.coords[0][0], self.coords[0][1], self.coords[0][0] - self.food[0], self.coords[0][1] - self.food[1]])
+			#		Results: 	Snake only reliably eats the first piece of food; fitness ranges from 130 to 300)
+			# 2. Passing in values that act like booleans: Is food above? Is food below? Is food to the left? Is food to the right?
+			# 		We want a function that maps to 1 for high values of distance, and 0 for negative values of distance. This is so that everything is normalized. Sigmoid!
+			#		Results: 	Snake aims for multiple pieces of food now, consistently getting scores of > 200. 
+			#					This means that it knows to aim for food when it randomly changes location; major improvement over centering on a single spot
+			#					The problem is that the snakes don't know to go left, so they keep running into the wall.  
+			#					
+            ai_dir = self.cpu.getDirection([self.sigmoid(-self.coords[0][0] + self.food[0]), self.sigmoid(-self.food[0] + self.coords[0][0]), self.sigmoid(self.coords[0][1] - self.food[1]), self.sigmoid(self.food[1] - self.coords[0][1])])
            
             # Checks AI's decision before obeying it 
             if (ai_dir < 2 and self.cur_dir > 1) or (ai_dir > 1 and self.cur_dir < 2):
@@ -76,3 +89,6 @@ class Snake:
         self.alive = True
         self.cur_dir = 1
         self.food = [15, 15]
+
+    def sigmoid(self, x): 
+        return 1 / (1 + np.exp(-x))
