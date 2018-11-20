@@ -32,9 +32,12 @@ class Snake:
             if head[0] < 0 or head[0] > win_w / PX_HEIGHT or head[1] < 0 or head[1] > win_h / PX_HEIGHT:
                 self.alive = False
 
-            for pixel in self.coords[1:]:
-                if head == pixel:
-                    self.alive = False
+			# Experiment 2a: Seeing the effect commenting this line out has
+			#		Result:		Initially, the snake did choose to go left, confirming my hypothesis. However, that trait died out when they tried to suicide. I believe this is because
+			#					
+            #for pixel in self.coords[1:]:
+            #    if head == pixel:
+            #        self.alive = False
         
             # Gets prediction from AI
 			# Experiments for input vector: 
@@ -46,7 +49,8 @@ class Snake:
 			#		Results: 	Snake aims for multiple pieces of food now, consistently getting scores of > 200. 
 			#					This means that it knows to aim for food when it randomly changes location; major improvement over centering on a single spot
 			#					The problem is that the snakes don't know to go left, so they keep running into the wall.  
-			#					
+			#					My theory is that the ones that go left run into themselves early on, so natural selection will breed against that trait. 
+			#					If we remove the death upon hitting oneself, then they may be willing to go left. Let's test this in an experiment 2a. 
             ai_dir = self.cpu.getDirection([self.sigmoid(-self.coords[0][0] + self.food[0]), self.sigmoid(-self.food[0] + self.coords[0][0]), self.sigmoid(self.coords[0][1] - self.food[1]), self.sigmoid(self.food[1] - self.coords[0][1])])
            
             # Checks AI's decision before obeying it 
