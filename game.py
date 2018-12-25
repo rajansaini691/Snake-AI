@@ -67,6 +67,7 @@ def on_death():
 	# Process the snakes' fitnesses
 	snakes.sort(key = lambda snake : snake.fitness, reverse = True)
 
+	snakes[0].print_score();
 	print("Highest fitness score: " + str(snakes[0].fitness))
  
 	snakes[0].COLOR = (0, 0, 0)
@@ -99,10 +100,10 @@ dir_mapping = {0: "up", 1: "down", 2: "left", 3: "right"}
 
 # Making snakes
 snakes = []
-for i in range(0, 10):
+for i in range(0, 20):
     # AI weights
     weights = []
-    shape = (4, 5, 4)
+    shape = (6, 5, 4)
 
     for i in range(0, len(shape) - 1):
         w = np.random.rand(shape[i] + 1, shape[i + 1] )
@@ -136,7 +137,7 @@ while not done:
     # Drawing
     screen.fill((255, 255, 255))
     for snake in snakes:
-        snake.draw(screen, PX_HEIGHT)
+        snake.draw(screen, PX_HEIGHT, win_w, win_h)
 
     # Checking deaths
     anyAlive = False

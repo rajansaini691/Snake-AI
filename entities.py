@@ -1,8 +1,10 @@
 import logic
+import math
 import copy
 import pygame
 import random
 import numpy as np
+import sys
 
 class Snake:
 
@@ -12,7 +14,7 @@ class Snake:
     def __init__(self, weights):
         # Game variables
         self.coords = [[0, 5], [0, 4], [0, 3], [0, 2]]
-        self.food = [random.randint(0, win_w / PX_HEIGHT), random.randint(0, win_h / PX_HEIGHT)]
+        self.food = [random.randint(0, 40), random.randint(0, 40)]
         self.cur_dir = 1
         self.COLOR = (0, 0, 255)
 
@@ -25,6 +27,14 @@ class Snake:
 		# Needed for experiment 2c, which raises the reward with each food eaten.
         self.food_count = 0
 
+		# For experiment 2d, which punishes snake by a diminishing amount for running into the wall
+        self.frames_survived = 0
+		
+		# Separates scores before adding together
+        self.pills_eaten = 0
+        self.dir_punishment = 0
+        self.collision_punishment = 0
+
     def move(self, PX_HEIGHT, win_w, win_h):
         # Only moves when snake is alive
         if self.alive:
@@ -33,6 +43,8 @@ class Snake:
 
             # Checking for death
             if head[0] < 0 or head[0] > win_w / PX_HEIGHT or head[1] < 0 or head[1] > win_h / PX_HEIGHT:
+                #self.fitness -= 200 / (self.frames_survived + 20)
+				
                 self.alive = False
 
 			# Experiment 2a: Seeing the effect commenting this line out has
@@ -56,7 +68,8 @@ class Snake:
 			#					The problem is that the snakes don't know to go left, so they keep running into the wall.  
 			#					My theory is that the ones that go left run into themselves early on, so natural selection will breed against that trait. 
 			#					If we remove the death upon hitting oneself, then they may be willing to go left. Let's test this in an experiment 2a. 
-            ai_dir = self.cpu.getDirection([self.sigmoid(-self.coords[0][0] + self.food[0]), self.sigmoid(-self.food[0] + self.coords[0][0]), self.sigmoid(self.coords[0][1] - self.food[1]), self.sigmoid(self.food[1] - self.coords[0][1])])
+			# 3. Passing in information about whether there exists an obstacle is redundant. We need a new way to reward positive movements other than relying on random chance
+            ai_dir = self.cpu.getDirection([self.sigmoid(-self.coords[0][0] + self.food[0]), self.sigmoid(-self.food[0] + self.coords[0][0]), self.sigmoid(self.coords[0][1] - self.food[1]), self.sigmoid(self.food[1] - self.coords[0][1]), self.sigmoid(-win_w / (PX_HEIGHT * 2) + self.coords[0][0]), self.sigmoid(-win_h / (PX_HEIGHT * 2) - self.coords[0][1])])
            
             # Checks AI's decision before obeying it 
             if (ai_dir < 2 and self.cur_dir > 1) or (ai_dir > 1 and self.cur_dir < 2):
@@ -72,29 +85,47 @@ class Snake:
 			# getting trapped in a local minimum sooner. This is required. I think what needs to be done instead is reduce the impact this has the more points the snake gets.
 			# To do that, we reward each additional food by a square rather than linear relationship.
             if((head[0] - self.food[0]) ** 2 + (head[1] - self.food[1]) ** 2 > (self.coords[0][0] - self.food[0]) ** 2 + (self.coords[0][1] - self.food[1]) ** 2):
-                self.fitness -= 1.5
+                self.dir_punishment += 1
+                #self.fitness -= 1.15
 
             # Reward living
             self.fitness += 1
 
             # Move the snake
             self.coords.insert(0, head)
+			
+			# For debugging:
+            self.frames_survived += 1
 
             if head != self.food:
                 self.coords.pop()
             else:
 				# Experiment 2c: Raise the food count and increase the fitness by it
-                self.food_count += 0.5;
-                self.fitness += 100 * self.food_count
+				#		Results: Not very successful; the snakes didn't go for more than 2 foods, and that was probably random. Incentivizing aiming for food is definitely optimal
+                self.fitness += 200
                 self.food = [random.randint(0, win_w / PX_HEIGHT), random.randint(0, win_h / PX_HEIGHT)]
+				# For debugging:
+                self.pills_eaten += 1
 
-    def draw(self, screen, PX_HEIGHT):
-        # Draw the snake
-        for coord in self.coords:
-            pygame.draw.rect(screen, self.COLOR, [coord[0] * PX_HEIGHT, coord[1] * PX_HEIGHT, PX_HEIGHT, PX_HEIGHT])
+    def draw(self, screen, PX_HEIGHT, win_w, win_h):
+		# Only draws the best performing snake
+        #if self.COLOR == (0, 0, 0):
+			# Input neuron values
+        	#pygame.draw.rect(screen, (0, 0, math.floor(self.sigmoid(-win_w / (PX_HEIGHT * 2) + self.coords[0][0]) * 255)), [0, 0, 200, 200]);
+        	#pygame.draw.rect(screen, (0, 0, math.floor(self.sigmoid(-win_h / (PX_HEIGHT * 2) + self.coords[0][1]) * 255)), [200, 0, 200, 200]);
 
-        # Draw the food
-        pygame.draw.rect(screen, self.FOOD_COLOR, [self.food[0] * PX_HEIGHT, self.food[1] * PX_HEIGHT, PX_HEIGHT, PX_HEIGHT]) 
+			# Draw the snake
+        	for coord in self.coords:
+        	    pygame.draw.rect(screen, self.COLOR, [coord[0] * PX_HEIGHT, coord[1] * PX_HEIGHT, PX_HEIGHT, PX_HEIGHT])
+
+        	# Draw the food
+        	pygame.draw.rect(screen, self.FOOD_COLOR, [self.food[0] * PX_HEIGHT, self.food[1] * PX_HEIGHT, PX_HEIGHT, PX_HEIGHT]) 
+
+    
+    def print_score(self):
+		print("Frames survived: " + str(self.frames_survived))
+		print("Frames survived: " + str(self.frames_survived) + "\nPills eaten: " + str(self.pills_eaten) + "              \nPunishment for wrong direction: " + str(self.dir_punishment))
+
 
     def reset(self):
         self.coords = [[0, 5], [0, 4], [0, 3], [0, 2]]
@@ -103,6 +134,10 @@ class Snake:
         self.cur_dir = 1
         self.food = [15, 15]
         self.food_count = 0
+        self.frames_survived = 0
+        self.pills_eaten = 0
+        self.dir_punishment = 0
 
     def sigmoid(self, x): 
-        return 1 / (1 + np.exp(-x))
+		# Multiplier of 1/5.0 good for food inputs
+        return 1 / (1 + np.exp(-x/10.))
