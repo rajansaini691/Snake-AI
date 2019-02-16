@@ -34,7 +34,7 @@ class Network:
         # Returns the highest index of the output matrix
         return np.argmax(new_input) 
 
-    def test():
+    def _test():
         # Stores the network's weights as a list of numpy arrays
         weights = []
 

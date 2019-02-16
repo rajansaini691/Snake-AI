@@ -11,12 +11,17 @@ class Snake:
     # Appearance
     FOOD_COLOR = (255, 0, 0)
     
-    def __init__(self, weights):
+    def __init__(self, weights, PX_HEIGHT, win_w, win_h):
         # Game variables
         self.coords = [[0, 5], [0, 4], [0, 3], [0, 2]]
-        self.food = [random.randint(0, 40), random.randint(0, 40)]
+        self.food = [random.randint(0, win_w/PX_HEIGHT), random.randint(0, win_h/PX_HEIGHT)]
         self.cur_dir = 1
         self.COLOR = (0, 0, 255)
+
+		# Window variables
+        self.PX_HEIGHT = PX_HEIGHT
+        self.win_w = win_w
+        self.win_h = win_h
 
         # AI variables
         self.fitness = 0
@@ -35,14 +40,14 @@ class Snake:
         self.dir_punishment = 0
         self.collision_punishment = 0
 
-    def move(self, PX_HEIGHT, win_w, win_h):
+    def move(self):
         # Only moves when snake is alive
         if self.alive:
             # Copies initial coord
             head = copy.copy(self.coords[0])
 
             # Checking for death
-            if head[0] < 0 or head[0] > win_w / PX_HEIGHT or head[1] < 0 or head[1] > win_h / PX_HEIGHT:
+            if head[0] < 0 or head[0] > self.win_w / self.PX_HEIGHT or head[1] < 0 or head[1] > self.win_h / self.PX_HEIGHT:
                 #self.fitness -= 200 / (self.frames_survived + 20)
 				
                 self.alive = False
@@ -69,7 +74,7 @@ class Snake:
 			#					My theory is that the ones that go left run into themselves early on, so natural selection will breed against that trait. 
 			#					If we remove the death upon hitting oneself, then they may be willing to go left. Let's test this in an experiment 2a. 
 			# 3. Passing in information about whether there exists an obstacle is redundant. We need a new way to reward positive movements other than relying on random chance
-            ai_dir = self.cpu.getDirection([self.sigmoid(-self.coords[0][0] + self.food[0]), self.sigmoid(-self.food[0] + self.coords[0][0]), self.sigmoid(self.coords[0][1] - self.food[1]), self.sigmoid(self.food[1] - self.coords[0][1]), self.sigmoid(-win_w / (PX_HEIGHT * 2) + self.coords[0][0]), self.sigmoid(-win_h / (PX_HEIGHT * 2) - self.coords[0][1])])
+            ai_dir = self.cpu.getDirection([self.sigmoid(-self.coords[0][0] + self.food[0]), self.sigmoid(-self.food[0] + self.coords[0][0]), self.sigmoid(self.coords[0][1] - self.food[1]), self.sigmoid(self.food[1] - self.coords[0][1]), self.sigmoid(-self.win_w / (self.PX_HEIGHT * 2) + self.coords[0][0]), self.sigmoid(-self.win_h / (self.PX_HEIGHT * 2) - self.coords[0][1])])
            
             # Checks AI's decision before obeying it 
             if (ai_dir < 2 and self.cur_dir > 1) or (ai_dir > 1 and self.cur_dir < 2):
@@ -84,12 +89,12 @@ class Snake:
             # Punish fitness if moving in wrong direction. Taken away by Experiment 2b. Results: Snakes were no longer incentivized to move towards the food, resulting in
 			# getting trapped in a local minimum sooner. This is required. I think what needs to be done instead is reduce the impact this has the more points the snake gets.
 			# To do that, we reward each additional food by a square rather than linear relationship.
-            if((head[0] - self.food[0]) ** 2 + (head[1] - self.food[1]) ** 2 > (self.coords[0][0] - self.food[0]) ** 2 + (self.coords[0][1] - self.food[1]) ** 2):
-                self.dir_punishment += 1
+            #if((head[0] - self.food[0]) ** 2 + (head[1] - self.food[1]) ** 2 > (self.coords[0][0] - self.food[0]) ** 2 + (self.coords[0][1] - self.food[1]) ** 2):
+                #self.dir_punishment += 1
                 #self.fitness -= 1.15
 
             # Reward living
-            self.fitness += 1
+            #self.fitness += 1
 
             # Move the snake
             self.coords.insert(0, head)
@@ -103,23 +108,23 @@ class Snake:
 				# Experiment 2c: Raise the food count and increase the fitness by it
 				#		Results: Not very successful; the snakes didn't go for more than 2 foods, and that was probably random. Incentivizing aiming for food is definitely optimal
                 self.fitness += 200
-                self.food = [random.randint(0, win_w / PX_HEIGHT), random.randint(0, win_h / PX_HEIGHT)]
+                self.food = [random.randint(0, self.win_w / self.PX_HEIGHT), random.randint(0, self.win_h / self.PX_HEIGHT)]
 				# For debugging:
                 self.pills_eaten += 1
 
-    def draw(self, screen, PX_HEIGHT, win_w, win_h):
+    def draw(self, screen):
 		# Only draws the best performing snake
         #if self.COLOR == (0, 0, 0):
 			# Input neuron values
-        	#pygame.draw.rect(screen, (0, 0, math.floor(self.sigmoid(-win_w / (PX_HEIGHT * 2) + self.coords[0][0]) * 255)), [0, 0, 200, 200]);
-        	#pygame.draw.rect(screen, (0, 0, math.floor(self.sigmoid(-win_h / (PX_HEIGHT * 2) + self.coords[0][1]) * 255)), [200, 0, 200, 200]);
+        	#pygame.draw.rect(screen, (0, 0, math.floor(self.sigmoid(-self.win_w / (self.PX_HEIGHT * 2) + self.coords[0][0]) * 255)), [0, 0, 200, 200]);
+        	#pygame.draw.rect(screen, (0, 0, math.floor(self.sigmoid(-self.win_h / (self.PX_HEIGHT * 2) + self.coords[0][1]) * 255)), [200, 0, 200, 200]);
 
 			# Draw the snake
         	for coord in self.coords:
-        	    pygame.draw.rect(screen, self.COLOR, [coord[0] * PX_HEIGHT, coord[1] * PX_HEIGHT, PX_HEIGHT, PX_HEIGHT])
+        	    pygame.draw.rect(screen, self.COLOR, [coord[0] * self.PX_HEIGHT, coord[1] * self.PX_HEIGHT, self.PX_HEIGHT, self.PX_HEIGHT])
 
         	# Draw the food
-        	pygame.draw.rect(screen, self.FOOD_COLOR, [self.food[0] * PX_HEIGHT, self.food[1] * PX_HEIGHT, PX_HEIGHT, PX_HEIGHT]) 
+        	pygame.draw.rect(screen, self.FOOD_COLOR, [self.food[0] * self.PX_HEIGHT, self.food[1] * self.PX_HEIGHT, self.PX_HEIGHT, self.PX_HEIGHT]) 
 
     
     def print_score(self):
@@ -132,7 +137,7 @@ class Snake:
         self.fitness = 0
         self.alive = True
         self.cur_dir = 1
-        self.food = [15, 15]
+        self.food = [random.randint(0, self.win_w / self.PX_HEIGHT), random.randint(0, self.win_h / self.PX_HEIGHT)]
         self.food_count = 0
         self.frames_survived = 0
         self.pills_eaten = 0

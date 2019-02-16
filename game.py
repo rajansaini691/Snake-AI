@@ -55,7 +55,6 @@ def mutate(snake):
 def breed(s1, s2):
 	w1 = copy.deepcopy(s1.weights)
 	w2 = copy.deepcopy(s2.weights)
-	
 	for l1, l2 in zip(w1, w2):
 		mask = np.logical_not(np.random.randint(0, 1, size = l1.shape).astype(np.bool))
 		l1[mask] = l2[mask]
@@ -85,7 +84,7 @@ def on_death():
 # Game initializations
 pygame.init()
 
-size = (700, 500)
+size = (1000, 2000)
 screen = pygame.display.set_mode(size)
 
 win_w, win_h = pygame.display.get_surface().get_size()
@@ -114,7 +113,7 @@ for i in range(0, 20):
         weights.append(w)
 
     # Adding a new snake
-    snakes.append(entities.Snake(weights))
+    snakes.append(entities.Snake(weights, PX_HEIGHT, win_w, win_h))
    
 
 while not done:
@@ -132,12 +131,12 @@ while not done:
 
     # Updating
     for snake in snakes:
-        snake.move(PX_HEIGHT, win_w, win_h)
+        snake.move()
     
     # Drawing
     screen.fill((255, 255, 255))
     for snake in snakes:
-        snake.draw(screen, PX_HEIGHT, win_w, win_h)
+        snake.draw(screen)
 
     # Checking deaths
     anyAlive = False
